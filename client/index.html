@@ -4,9 +4,15 @@
     <meta charset="utf-8">
     <title>chatterbox</title>
     <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bower_components/tether/dist/css/tether.min.css">
 
     <!-- dependencies -->
     <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/underscore/underscore-min.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="bower_components/tether/dist/js/tether.min.js"></script>
+    <script src="bower_components/moment/moment.js"></script>
     <script>
       // YOU DO NOT NEED TO EDIT THIS CODE
       if (!/(&|\?)username=/.test(window.location.search)) {
@@ -21,11 +27,27 @@
     <!-- your scripts -->
     <script src="env/config.js"></script>
     <script src="scripts/app.js"></script>
+    
   </head>
   <body>
     <div id="main">
       <h1>chatterbox</h1>
+      <h3 class="currentTime"></h3>
       <!-- Your HTML goes here! -->
+      <label>Room:</label>
+      <select id='roomChoice'>
+        <option>ONE</option>
+        <option>TWO</option>
+        <option>THREE</option>
+        <option>FOUR</option>
+      </select>
+      <form id='sendMessage'>
+        <textarea id='messageText' type='textarea'></textarea>
+        <button class='btn btn-danger' value="Send" id="submitMessage">Send</button>
+      </form>
+      <button class='getMessages'>GET</button>
+      <section id='feed'>
+      </section>
     </div>
     <div id="chats"></div>
   </body>
