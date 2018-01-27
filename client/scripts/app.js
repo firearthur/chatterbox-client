@@ -44,7 +44,7 @@ const cleanText = (text) => {
     '(': '&#40;',
     ')': '&#41;',
     '@': '&#64;',
-    '!': '&#133;',
+    '!': '&#33;',
     '$': '&#36;',
     '%': '&#37;'
   };
@@ -71,20 +71,17 @@ const app = {
     activeRoom: '',
     messages: {},
     messageList: [],
+    renderedMessages: [],
     lastRequest: null,
     rooms: new Set(),
     users: new Set(),
     friends: new Set(),
+    paused: false
   },
   server: 'http://parse.la.hackreactor.com/chatterbox/classes/messages',
   $feed: $('#feed')
 
 };
-
-// application state
-//    who am i 
-//    what am i looking at 
-//    who are my friends
 
 app.send = function (message) {
   $.ajax({
@@ -105,36 +102,39 @@ app.send = function (message) {
 };
 
 app.fetch = function() {
-  let request = {
-    order: '-createdAt',
-    limit: 25,
-  };
-  if ( app.state.activeRoom ) { 
-    request.where = { roomname: app.state.activeRoom };
-    console.log(`querying for messages with room: ${app.state.activeRoom}`); 
-  }
-
-  $.ajax({
-    // This is the url you should use to communicate with the parse API server.
-    url: `${BASEURL}/messages`,
-    type: 'GET',
-    data: request,
-    contentType: 'application/json',
-    success: function (data) {
-      console.log('chatterbox: Messages recieved');
-      console.log(data);
-      app.processFeed(data.results);
-    },
-    error: function (data) {
-      // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
-      console.error('chatterbox: Failed to retrieve messages', data);
+  if ( !app.state.paused ) {
+    let request = {
+      order: '-createdAt',
+      limit: 25,
+    };
+    if ( app.state.activeRoom ) { 
+      request.where = { roomname: app.state.activeRoom };
+      console.log(`querying for messages with room: ${app.state.activeRoom}`); 
     }
-  });
+
+    $.ajax({
+      // This is the url you should use to communicate with the parse API server.
+      url: `${BASEURL}/messages`,
+      type: 'GET',
+      data: request,
+      contentType: 'application/json',
+      success: function (data) {
+        console.log('chatterbox: Messages recieved');
+        console.log(data);
+        app.processFeed(data.results);
+      },
+      error: function (data) {
+        // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
+        console.error('chatterbox: Failed to retrieve messages', data);
+      }
+    });
+  }
 };
 
 app.clearMessages = function() {
   this.state.messages = {};
   this.state.messageList = [];
+  this.state.renderedMessages = [];
   $('#chats').empty();
 };
 
@@ -157,56 +157,49 @@ app.processFeed = function(data = []) {
 app.renderMessages = function() {
   this.state.messageList.reverse();
   this.state.messageList.forEach(function(messageId) {
-    app.renderMessage(app.state.messages[messageId]);
+    if ( !app.state.renderedMessages.includes(messageId) ) {
+      app.renderMessage(app.state.messages[messageId]);
+      app.state.renderedMessages.push(messageId);
+    }
   });
 };
-
-/*
-
-
-<div class="card">
-  <div class="card-block">
-    <h4 class="card-title">Card title</h4>
-    <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
-    <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-    <a href="#" class="card-link">Card link</a>
-    <a href="#" class="card-link">Another link</a>
-  </div>
-</div>
-
-*/
 
 app.renderMessage = function(message) {
 
   let $messageCard = $('<div></div>');
-  $messageCard.addClass('card');
+  $messageCard.addClass('card card-block');
 
   $message = $('<div></div>');
-  $message.addClass('card-block message');
+  $message.addClass('message');
 
   let userName = cleanText(message.username);
   if ( this.state.friends.has(userName) ) {
-    $message.addClass('friend');
+    $messageCard.addClass('friend alert-info');
   }
-  let $user = $('<h4></h4>');
-  $user.addClass('username card-title message__user');
+  $messageCard.attr('data-username', userName);
+  $messageCard.attr('data-message-id', message.objectId);
+  let $user = $('<span></span>');
+  $user.addClass('username');
   $user.text(userName);
 
-  let $room = $('<h5></h5>');
-  $room.addClass('room card-subtitle mb-2 text-muted');
+  let $messageDetails = $('<div></div>');
+
+  let $room = $('<small></small>');
+  $room.addClass('room message__room mb-2 text-muted text-left');
   $room.text(cleanText(message.roomname));
 
   let dateText = dateFromNow(message.createdAt);
-  let $date = $('<span></span>');
-  $date.addClass('message__date');
+  let $date = $('<small></small>');
+  $date.addClass('message__date text-muted text-right');
   $date.text(dateText);
 
   let messageText = cleanText(message.text);
   let $text = $('<p></p>').html(messageText);
   $text.addClass('message__text');
 
-  $message.append($user).append($room).append($text).append($date);
-  $messageCard.append($message);
+  $message.append($user).append($text);
+  $messageDetails.append($room).append($date);
+  $messageCard.append($message).append($messageDetails);
   $('#chats').prepend($messageCard);
 
   // check for new users
@@ -220,6 +213,7 @@ app.renderRoom = function(room) {
   }
   this.state.activeRoom = room;
   this.refreshRooms();
+  $('#roomName').val(''); 
 
   this.clearMessages();
   this.renderMessages();
@@ -233,14 +227,14 @@ app.refreshRooms = function() {
   $('#roomSelect').empty();
   this.state.rooms.forEach((room) => { 
     let isActive = room === this.state.activeRoom ? 'selected' : '';
-    $('#roomSelect').append($(`<option ${isActive}>${room}</option>`));
-    $('#roomName').val('');    
+    $('#roomSelect').append($(`<option ${isActive}>${room}</option>`));   
   });
 };
 
-app.handleUsernameClick = function() {
-
+app.handleUsernameClick = function(username) {
+  $(`[data-username*="${username}"]`).toggleClass('friend alert-info');
 };
+
 
 app.handleSubmit = function() {
   let formValue = $('#messageText').val();
@@ -280,14 +274,19 @@ app.init = function() {
       let currentRoom = $(this).val();
       app.renderRoom(currentRoom);
     });
+    $('body').on('click','.username' ,function (e) {
+      console.log('Heeeeeeeeeeeey');
+      app.state.friends.add($(this).text());
+      app.handleUsernameClick($(this).text());
+    });
+
+    $('#pause').on('click', function(e) {
+      e.preventDefault();
+      app.state.paused = app.state.paused === true ? false : true;
+      console.log(`FETCH: ${app.state.paused}`);
+    })
     app.renderRoom('lobby');
     setInterval(app.fetch, 2000);
-    // populate room list
-    //    built from messages we found
-    // populate user list
-    //    built from messages we found
-    // bound add-room function to a button somewhere
-    //    sets current room state
 
   });
 };

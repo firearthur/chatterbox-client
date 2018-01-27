@@ -15,14 +15,14 @@
     <script src="bower_components/moment/moment.js"></script>
     <script>
       // YOU DO NOT NEED TO EDIT THIS CODE
-      // if (!/(&|\?)username=/.test(window.location.search)) {
-      //   var newSearch = window.location.search;
-      //   if (newSearch !== '' & newSearch !== '?') {
-      //     newSearch += '&';
-      //   }
-      //   newSearch += 'username=' + (prompt('What is your name?') || 'anonymous');
-      //   window.location.search = newSearch;
-      // }
+      if (!/(&|\?)username=/.test(window.location.search)) {
+        var newSearch = window.location.search;
+        if (newSearch !== '' & newSearch !== '?') {
+          newSearch += '&';
+        }
+        newSearch += 'username=' + (prompt('What is your name?') || 'anonymous');
+        window.location.search = newSearch;
+      }
     </script>
     <!-- your scripts -->
     <script src="env/config.js"></script>
@@ -34,27 +34,35 @@
       <div id="main">
         <div class="jumbotron jumbotron-fluid">
           <div class="container">
-            <h1 class="display-3">chatterbox</h1>
-            <h3 id="activeRoom"></h3>
+            <h1 class="display-3 text-center">ChatterBox</h1>
           </div>
         </div>
         <!-- Your HTML goes here! -->
-        <form id="rooms" class="form-inline">
-          <label>Room:</label>
-          <select class= "form-control" id='roomSelect'>
-          </select>
-          <input name = 'roomName form-control' id= "roomName" type="text">
-          <button id= "submitRoomName" class= "btn btn-success">ADD ROOM</button>
+        <form id="rooms" class="form-control">
+          <div class="input-group mb-2 mr-sm-2 mb-sm-0">
+            <div class="input-group-addon">Room</div>
+            <select class= "form-control" id='roomSelect'>
+            </select>
+          </div>
+          <div class="input-group mb-2 mr-sm-2 mb-sm-0">
+            <div class="input-group-addon">+</div>
+            <input name = 'roomName form-control' id= "roomName" type="text">
+            <button id= "submitRoomName" class= "btn btn-primary">Create</button>
+          </div>
         </form>
         <div>
           <form id="send">
-            <input type="text" id='messageText' class='form-control' type='textarea' />
-            <!--<input type="submit" value="Send" class='submit btn btn-success' id="sendMessage">-->
-            <button class='submit btn btn-success' id="sendMessage">Send</button>
+            <div class="input-group mb-2 mr-sm-2 mb-sm-0">
+              <div class="input-group-addon">+</div>
+              <input type="text" id='messageText' class='form-control' type='textarea' />
+              <!--<input type="submit" value="Send" class='submit btn btn-success' id="sendMessage">-->
+              <button class='submit btn btn-primary' id="sendMessage">Send</button>
+            </div>
           </form>
         </div>
         <button class='btn btn-primary getMessages'>GET</button>
-        <button class='btn btn-danger clearMessages'>CLEAR</button>
+        <button class='btn btn-secondary clearMessages'>CLEAR</button>
+        <button class='btn btn-secondary' id="pause">PAUSE</button>
       </div>
       <section id="chats"></section>
     </section>

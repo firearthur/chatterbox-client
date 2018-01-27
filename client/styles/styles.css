@@ -67,6 +67,43 @@ form input[type=text] {
 
 .chat .username {
     font-weight: 800;
+    cursor: pointer;
+}
+
+.username {
+    color: black;
+    font-weight: 800;
+    font-size: 16px;
+    display: inline-block;
+    margin-right: 24px;
+}
+
+.username:hover {
+    color:blue;
+    cursor: pointer;
+}
+
+.message__text {
+    color: black;
+    font-size: 14px;
+    font-weight: 400;
+    display: inline-block;
+}
+
+
+.message__date {
+    color: #777;
+    font-size: 12px;
+    font-style: italic;
+    font-weight: 400;
+    float: right;
+}
+
+.message__room {
+    color: #777;
+    font-size: 12px;
+    font-weight: 400;
+    float: left;
 }
 
 .chat:hover {
@@ -86,5 +123,6 @@ form input[type=text] {
 .friend {
     color: #fff;
     background-color: #0090da;
+    
 }
 
