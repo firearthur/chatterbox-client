@@ -25,13 +25,41 @@ const composeMessageDisplay = (message) => {
   return $message;
 };
 
+/*
+&, <, >, ", ', `, , !, @, $, %, (, ), =, +, {, }, [, and ]
+*/
+
 const cleanText = (text) => {
-  return _.escape(text);
+  let htmlEscapes = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+    '=': '&#61;',
+    '{': '&#123;',
+    '}': '&#125;',
+    '+': '&#43;',
+    '(': '&#40;',
+    ')': '&#41;',
+    '@': '&#64;',
+    '!': '&#133;',
+    '$': '&#36;',
+    '%': '&#37;'
+  };
+  let htmlEscaper = /[&<>"'={}+()!@$%\/]/g;
+  escape = function (string) {
+    return ('' + string).replace(htmlEscaper, function (match) {
+      return htmlEscapes[match];
+    });
+  };
+  return escape(text);
 };
 
 const dateFromNow = function (date) {
-  var now = moment(new Date());
-  var created = moment(date);
+  let now = moment(new Date());
+  let created = moment(date);
   return created.from(now);
 };
 
@@ -42,6 +70,7 @@ const app = {
     user: "Eminem",
     activeRoom: '',
     messages: {},
+    messageList: [],
     lastRequest: null,
     rooms: new Set(),
     users: new Set(),
@@ -80,7 +109,10 @@ app.fetch = function() {
     order: '-createdAt',
     limit: 25,
   };
-  if ( app.state.activeRoom ) { request.where = { roomname: app.state.activeRoom }; }
+  if ( app.state.activeRoom ) { 
+    request.where = { roomname: app.state.activeRoom };
+    console.log(`querying for messages with room: ${app.state.activeRoom}`); 
+  }
 
   $.ajax({
     // This is the url you should use to communicate with the parse API server.
@@ -91,7 +123,7 @@ app.fetch = function() {
     success: function (data) {
       console.log('chatterbox: Messages recieved');
       console.log(data);
-      app.renderMessages(data.results);
+      app.processFeed(data.results);
     },
     error: function (data) {
       // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
@@ -101,24 +133,31 @@ app.fetch = function() {
 };
 
 app.clearMessages = function() {
-  this.state.messages = [];
+  this.state.messages = {};
+  this.state.messageList = [];
   $('#chats').empty();
 };
 
-
-app.renderMessages = function(data = []) {
-  let $target = $('#chats');
+app.processFeed = function(data = []) {
   data.forEach( (message) => {
-    if ( message.text.trim() ) {
+    if ( message.text && message.text.trim() ) {
       if ( !this.state.messages[message.objectId] ) {
-        this.state.messages[message.objectId] = true; // consider caching message 
-        this.renderMessage(message);
+        this.state.messageList.push(message.objectId);
+        this.state.messages[message.objectId] = message; // consider caching message 
       }
     }
-    // if ( !this.state.rooms.has(message.roomname) ) {
-    //   this.addRoom(message.roomname);
-    //   this.refreshRooms();
-    // }
+    if ( !this.state.rooms.has(message.roomname) ) {
+      this.addRoom(roomname);
+    }
+  });
+  app.refreshRooms();
+  app.renderMessages();
+};
+
+app.renderMessages = function() {
+  this.state.messageList.reverse();
+  this.state.messageList.forEach(function(messageId) {
+    app.renderMessage(app.state.messages[messageId]);
   });
 };
 
@@ -163,7 +202,7 @@ app.renderMessage = function(message) {
   $date.text(dateText);
 
   let messageText = cleanText(message.text);
-  let $text = $('<p></p>').text(messageText);
+  let $text = $('<p></p>').html(messageText);
   $text.addClass('message__text');
 
   $message.append($user).append($room).append($text).append($date);
@@ -175,6 +214,7 @@ app.renderMessage = function(message) {
 };
 
 app.renderRoom = function(room) {
+  console.log(`visiting ${room}`);
   if ( !this.state.rooms.has(room) ) {
     this.addRoom(room);
   }
@@ -192,7 +232,7 @@ app.addRoom = function(name) {
 app.refreshRooms = function() {
   $('#roomSelect').empty();
   this.state.rooms.forEach((room) => { 
-    let isActive = room === this.state.activeRoom ? 'active' : '';
+    let isActive = room === this.state.activeRoom ? 'selected' : '';
     $('#roomSelect').append($(`<option ${isActive}>${room}</option>`));
     $('#roomName').val('');    
   });
@@ -203,7 +243,7 @@ app.handleUsernameClick = function() {
 };
 
 app.handleSubmit = function() {
-  let formValue = $('#send .submit').val();
+  let formValue = $('#messageText').val();
   if (formValue.trim()) {
     let message = {
       username: app.state.user,
@@ -211,7 +251,7 @@ app.handleSubmit = function() {
       roomname: app.state.activeRoom
     };
     app.send(message);
-    $('messageText').val('');
+    $('#messageText').val('');
   }
 };
 
@@ -220,15 +260,25 @@ app.init = function() {
     $('.getMessages').on('click', app.fetch);
     $('.currentTime').text(moment());
     $('.clearMessages').on('click', app.clearMessages);
-    $('.username').on('click', app.handleUsernameClick);
+    $('.username').on('click', app.handleUsernameClick.bind($(this)));
     app.refreshRooms();
-    $('#send .submit').on('submit', app.handleSubmit);
-    $('#submitRoomName').on('click', function () { 
+    $('#send').on('submit', function(e) {
+      console.log('hello');
+      e.preventDefault();
+      app.handleSubmit();
+    });
+    $('#rooms').on('submit', function (e) { 
+      e.preventDefault();
       let room = $('#roomName').val();
       if ( room.trim() ) {
         room = cleanText(room.trim());
         app.addRoom(room);
+        app.renderRoom(room);
       }
+    });
+    $('#roomSelect').on('change', function(e) {
+      let currentRoom = $(this).val();
+      app.renderRoom(currentRoom);
     });
     app.renderRoom('lobby');
     setInterval(app.fetch, 2000);

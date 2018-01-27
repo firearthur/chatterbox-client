@@ -39,7 +39,7 @@
           </div>
         </div>
         <!-- Your HTML goes here! -->
-        <form class="form-inline">
+        <form id="rooms" class="form-inline">
           <label>Room:</label>
           <select class= "form-control" id='roomSelect'>
           </select>
@@ -49,7 +49,8 @@
         <div>
           <form id="send">
             <input type="text" id='messageText' class='form-control' type='textarea' />
-            <input type="submit" value="Send" class='submit btn btn-success' id="sendMessage">
+            <!--<input type="submit" value="Send" class='submit btn btn-success' id="sendMessage">-->
+            <button class='submit btn btn-success' id="sendMessage">Send</button>
           </form>
         </div>
         <button class='btn btn-primary getMessages'>GET</button>
