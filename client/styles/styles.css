@@ -6,7 +6,7 @@ body {
 }
 
 #main, #chats {
-    width: 500px;
+    width: 80vw;
     margin: auto;
     text-align: left;
     background: white;
